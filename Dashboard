@@ -1,0 +1,235 @@
+import React, { useState, useEffect } from "react";
+import { User } from "@/entities/User";
+import { UserProfile } from "@/entities/UserProfile";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import { 
+  BookOpen, 
+  Target, 
+  School, 
+  TrendingUp, 
+  Award, 
+  Clock,
+  ArrowRight,
+  CheckCircle,
+  AlertCircle,
+  User as UserIcon,
+  Lightbulb
+} from "lucide-react";
+
+export default function Dashboard() {
+  const [user, setUser] = useState(null);
+  const [userProfile, setUserProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadUserData();
+  }, []);
+
+  const loadUserData = async () => {
+    try {
+      const currentUser = await User.me();
+      setUser(currentUser);
+      
+      const profiles = await UserProfile.filter({created_by: currentUser.email});
+      if (profiles.length > 0) {
+        setUserProfile(profiles[0]);
+      }
+    } catch (error) {
+      await User.loginWithRedirect(window.location.href);
+    }
+    setLoading(false);
+  };
+
+  if (loading) {
+    return (
+      <div className="p-8 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  const getOnboardingProgress = () => {
+    if (!userProfile) return 0;
+    let progress = 25; // Profile created
+    if (userProfile.quiz_completed) progress += 50;
+    if (userProfile.onboarding_completed) progress += 25;
+    return progress;
+  };
+
+  const getNextStep = () => {
+    if (!userProfile) return { title: "Complete Profile Setup", url: createPageUrl("ProfileSetup"), icon: UserIcon };
+    if (!userProfile.quiz_completed) return { title: "Take Interest Quiz", url: createPageUrl("InterestQuiz"), icon: Target };
+    return { title: "Explore Courses", url: createPageUrl("CourseExploration"), icon: BookOpen };
+  };
+
+  const progressPercentage = getOnboardingProgress();
+  const nextStep = getNextStep();
+  const NextStepIcon = nextStep.icon;
+
+  return (
+    <div className="p-6 md:p-8 space-y-8">
+      {/* Welcome Section */}
+      <div className="text-center space-y-4">
+        <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+          Welcome to EduGuide India!
+        </h1>
+        <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+          Your personalized journey to discovering the perfect educational path and career opportunities in India.
+        </p>
+      </div>
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50">
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <CardTitle className="text-sm font-medium text-blue-700">Learning Streak</CardTitle>
+            <Clock className="h-5 w-5 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-900">{userProfile?.learning_streak || 0} days</div>
+            <p className="text-xs text-blue-600 mt-1">Keep learning daily!</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-green-200 bg-gradient-to-br from-green-50 to-emerald-50">
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <CardTitle className="text-sm font-medium text-green-700">Badges Earned</CardTitle>
+            <Award className="h-5 w-5 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-900">{userProfile?.total_badges || 0}</div>
+            <p className="text-xs text-green-600 mt-1">Achievements unlocked</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-purple-200 bg-gradient-to-br from-purple-50 to-pink-50">
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <CardTitle className="text-sm font-medium text-purple-700">Progress</CardTitle>
+            <TrendingUp className="h-5 w-5 text-purple-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-purple-900">{progressPercentage}%</div>
+            <p className="text-xs text-purple-600 mt-1">Profile completion</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Current Journey Status */}
+      <Card className="border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-amber-800">
+            <Lightbulb className="h-5 w-5" />
+            Your Learning Journey
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <h3 className="font-semibold text-gray-900">Next Step: {nextStep.title}</h3>
+              <p className="text-sm text-gray-600">Continue your educational discovery journey</p>
+            </div>
+            <Link to={nextStep.url}>
+              <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
+                <NextStepIcon className="w-4 h-4 mr-2" />
+                Continue
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </Link>
+          </div>
+          
+          {/* Progress Bar */}
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span>Overall Progress</span>
+              <span>{progressPercentage}%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 h-2 rounded-full transition-all duration-300"
+                style={{ width: progressPercentage + '%' }}
+              ></div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Journey Checklist */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl font-bold text-gray-900">Your Educational Journey Checklist</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-center gap-4 p-4 rounded-lg bg-gray-50">
+              {userProfile ? <CheckCircle className="h-5 w-5 text-green-600" /> : <AlertCircle className="h-5 w-5 text-amber-500" />}
+              <div className="flex-1">
+                <h3 className="font-medium">Complete Your Profile</h3>
+                <p className="text-sm text-gray-600">Set up your basic information and preferences</p>
+              </div>
+              {userProfile ? (
+                <Badge variant="secondary" className="bg-green-100 text-green-800">Completed</Badge>
+              ) : (
+                <Link to={createPageUrl("ProfileSetup")}>
+                  <Button size="sm" variant="outline">Start</Button>
+                </Link>
+              )}
+            </div>
+
+            <div className="flex items-center gap-4 p-4 rounded-lg bg-gray-50">
+              {userProfile?.quiz_completed ? <CheckCircle className="h-5 w-5 text-green-600" /> : <AlertCircle className="h-5 w-5 text-amber-500" />}
+              <div className="flex-1">
+                <h3 className="font-medium">Take Interest Assessment Quiz</h3>
+                <p className="text-sm text-gray-600">Discover your academic strengths and interests</p>
+              </div>
+              {userProfile?.quiz_completed ? (
+                <Badge variant="secondary" className="bg-green-100 text-green-800">Completed</Badge>
+              ) : (
+                <Link to={createPageUrl("InterestQuiz")}>
+                  <Button size="sm" variant="outline" disabled={!userProfile}>
+                    {userProfile ? "Start" : "Complete Profile First"}
+                  </Button>
+                </Link>
+              )}
+            </div>
+
+            <div className="flex items-center gap-4 p-4 rounded-lg bg-gray-50">
+              <BookOpen className="h-5 w-5 text-blue-600" />
+              <div className="flex-1">
+                <h3 className="font-medium">Explore Course Options</h3>
+                <p className="text-sm text-gray-600">Browse recommended courses based on your interests</p>
+              </div>
+              <Link to={createPageUrl("CourseExploration")}>
+                <Button size="sm" variant="outline">Explore</Button>
+              </Link>
+            </div>
+
+            <div className="flex items-center gap-4 p-4 rounded-lg bg-gray-50">
+              <School className="h-5 w-5 text-purple-600" />
+              <div className="flex-1">
+                <h3 className="font-medium">Find Government Colleges</h3>
+                <p className="text-sm text-gray-600">Search for affordable colleges near you</p>
+              </div>
+              <Link to={createPageUrl("CollegeDirectory")}>
+                <Button size="sm" variant="outline">Search</Button>
+              </Link>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Motivational Quote */}
+      <Card className="border-2 border-dashed border-blue-200 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50">
+        <CardContent className="text-center py-8">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            "Education is the most powerful weapon which you can use to change the world."
+          </h3>
+          <p className="text-blue-600 font-medium">- Nelson Mandela</p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
