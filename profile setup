@@ -1,0 +1,337 @@
+import React, { useState, useEffect } from "react";
+import { User } from "@/entities/User";
+import { UserProfile } from "@/entities/UserProfile";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { useNavigate } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import { AlertCircle, CheckCircle, User as UserIcon } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+const INDIAN_STATES = [
+  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
+  "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jammu and Kashmir",
+  "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra",
+  "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab",
+  "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura",
+  "Uttar Pradesh", "Uttarakhand", "West Bengal", "Delhi"
+];
+
+export default function ProfileSetup() {
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  const [existingProfile, setExistingProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const [formData, setFormData] = useState({
+    name: "",
+    age: "",
+    gender: "",
+    class_level: "",
+    state: "",
+    district: "",
+    career_goals: "",
+    preferred_language: "english"
+  });
+
+  useEffect(() => {
+    loadUserData();
+  }, []);
+
+  const loadUserData = async () => {
+    try {
+      const currentUser = await User.me();
+      setUser(currentUser);
+      
+      // Check if profile already exists
+      const profiles = await UserProfile.filter({created_by: currentUser.email});
+      if (profiles.length > 0) {
+        const profile = profiles[0];
+        setExistingProfile(profile);
+        setFormData({
+          name: profile.name || currentUser.full_name || "",
+          age: profile.age || "",
+          gender: profile.gender || "",
+          class_level: profile.class_level || "",
+          state: profile.state || "",
+          district: profile.district || "",
+          career_goals: profile.career_goals || "",
+          preferred_language: profile.preferred_language || "english"
+        });
+      } else {
+        setFormData(prev => ({ ...prev, name: currentUser.full_name || "" }));
+      }
+    } catch (error) {
+      await User.loginWithRedirect(window.location.href);
+    }
+    setLoading(false);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setSaving(true);
+
+    try {
+      // Validation
+      if (!formData.name || !formData.age || !formData.gender || 
+          !formData.class_level || !formData.career_goals) {
+        setError("Please fill in all required fields");
+        setSaving(false);
+        return;
+      }
+
+      if (formData.age < 14 || formData.age > 25) {
+        setError("Age must be between 14 and 25 years");
+        setSaving(false);
+        return;
+      }
+
+      const profileData = {
+        ...formData,
+        age: parseInt(formData.age),
+        onboarding_completed: false,
+        quiz_completed: false,
+        learning_streak: existingProfile?.learning_streak || 0,
+        total_badges: existingProfile?.total_badges || 0
+      };
+
+      if (existingProfile) {
+        await UserProfile.update(existingProfile.id, profileData);
+      } else {
+        await UserProfile.create(profileData);
+      }
+
+      navigate(createPageUrl("InterestQuiz"));
+    } catch (error) {
+      setError("Failed to save profile. Please try again.");
+      console.error("Profile save error:", error);
+    }
+    setSaving(false);
+  };
+
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    setError("");
+  };
+
+  if (loading) {
+    return (
+      <div className="p-8 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6 md:p-8 max-w-2xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="text-center space-y-4">
+        <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center mx-auto">
+          <UserIcon className="w-8 h-8 text-white" />
+        </div>
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+          {existingProfile ? "Update Your Profile" : "Complete Your Profile"}
+        </h1>
+        <p className="text-gray-600">
+          Tell us about yourself so we can provide personalized guidance for your educational journey.
+        </p>
+      </div>
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      <Card className="border-blue-200">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-blue-800">
+            <CheckCircle className="h-5 w-5" />
+            Personal Information
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Basic Information */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="name" className="text-gray-700 font-medium">
+                  Full Name <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => handleInputChange("name", e.target.value)}
+                  placeholder="Enter your full name"
+                  className="border-blue-200 focus:border-blue-400"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="age" className="text-gray-700 font-medium">
+                  Age <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="age"
+                  type="number"
+                  min="14"
+                  max="25"
+                  value={formData.age}
+                  onChange={(e) => handleInputChange("age", e.target.value)}
+                  placeholder="Your age"
+                  className="border-blue-200 focus:border-blue-400"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="gender" className="text-gray-700 font-medium">
+                  Gender <span className="text-red-500">*</span>
+                </Label>
+                <Select value={formData.gender} onValueChange={(value) => handleInputChange("gender", value)}>
+                  <SelectTrigger className="border-blue-200 focus:border-blue-400">
+                    <SelectValue placeholder="Select your gender" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="female">Female</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                    <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="class_level" className="text-gray-700 font-medium">
+                  Current Education Level <span className="text-red-500">*</span>
+                </Label>
+                <Select value={formData.class_level} onValueChange={(value) => handleInputChange("class_level", value)}>
+                  <SelectTrigger className="border-blue-200 focus:border-blue-400">
+                    <SelectValue placeholder="Select your current class" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10th">10th Standard</SelectItem>
+                    <SelectItem value="11th">11th Standard</SelectItem>
+                    <SelectItem value="12th">12th Standard</SelectItem>
+                    <SelectItem value="graduate">Graduate</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="state" className="text-gray-700 font-medium">
+                  State
+                </Label>
+                <Select value={formData.state} onValueChange={(value) => handleInputChange("state", value)}>
+                  <SelectTrigger className="border-blue-200 focus:border-blue-400">
+                    <SelectValue placeholder="Select your state" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {INDIAN_STATES.map((state) => (
+                      <SelectItem key={state} value={state}>{state}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="district" className="text-gray-700 font-medium">
+                  District
+                </Label>
+                <Input
+                  id="district"
+                  value={formData.district}
+                  onChange={(e) => handleInputChange("district", e.target.value)}
+                  placeholder="Your district"
+                  className="border-blue-200 focus:border-blue-400"
+                />
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="preferred_language" className="text-gray-700 font-medium">
+                  Preferred Language
+                </Label>
+                <Select value={formData.preferred_language} onValueChange={(value) => handleInputChange("preferred_language", value)}>
+                  <SelectTrigger className="border-blue-200 focus:border-blue-400">
+                    <SelectValue placeholder="Select your preferred language" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="english">English</SelectItem>
+                    <SelectItem value="hindi">हिंदी (Hindi)</SelectItem>
+                    <SelectItem value="tamil">தமிழ் (Tamil)</SelectItem>
+                    <SelectItem value="telugu">తెలుగు (Telugu)</SelectItem>
+                    <SelectItem value="kannada">ಕನ್ನಡ (Kannada)</SelectItem>
+                    <SelectItem value="marathi">मराठी (Marathi)</SelectItem>
+                    <SelectItem value="gujarati">ગુજરાતી (Gujarati)</SelectItem>
+                    <SelectItem value="bengali">বাংলা (Bengali)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Career Goals */}
+            <div className="space-y-2">
+              <Label htmlFor="career_goals" className="text-gray-700 font-medium">
+                Career Goals & Ambitions <span className="text-red-500">*</span>
+              </Label>
+              <Textarea
+                id="career_goals"
+                value={formData.career_goals}
+                onChange={(e) => handleInputChange("career_goals", e.target.value)}
+                placeholder="What do you want to become? What are your career aspirations? (e.g., Doctor, Engineer, Teacher, Civil Servant, etc.)"
+                rows={4}
+                className="border-blue-200 focus:border-blue-400"
+              />
+              <p className="text-sm text-gray-500">
+                This helps us recommend the best courses and colleges for your goals.
+              </p>
+            </div>
+
+            {/* Submit Button */}
+            <div className="pt-6">
+              <Button
+                type="submit"
+                disabled={saving}
+                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-3 text-lg"
+              >
+                {saving ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    {existingProfile ? "Updating..." : "Saving..."}
+                  </>
+                ) : (
+                  <>
+                    {existingProfile ? "Update Profile" : "Save Profile & Continue"}
+                    <CheckCircle className="w-5 h-5 ml-2" />
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* Privacy Note */}
+      <Card className="border-green-200 bg-gradient-to-r from-green-50 to-emerald-50">
+        <CardContent className="py-4">
+          <div className="flex items-start gap-3">
+            <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
+            <div>
+              <h3 className="font-semibold text-green-800">Your Privacy is Protected</h3>
+              <p className="text-sm text-green-700 mt-1">
+                Your personal information is secure and will only be used to provide personalized educational recommendations.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
