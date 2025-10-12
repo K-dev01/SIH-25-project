@@ -1,0 +1,289 @@
+
+import React, { useState, useEffect, useCallback } from "react";
+import { User } from "@/entities/User";
+import { UserProfile } from "@/entities/UserProfile";
+import { College } from "@/entities/College";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Link, useLocation } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import { useToast } from "@/components/ui/use-toast";
+import { 
+  School, 
+  Search, 
+  MapPin, 
+  Filter, 
+  Star,
+  ExternalLink,
+  Wifi,
+  Home,
+  BookOpen as BookIcon,
+  Utensils,
+  Activity
+} from "lucide-react";
+
+import CollegeCard from "../components/colleges/CollegeCard";
+import CollegeFilters from "../components/colleges/CollegeFilters";
+
+const INDIAN_STATES = [
+  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
+  "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jammu and Kashmir",
+  "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra",
+  "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab",
+  "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura",
+  "Uttar Pradesh", "Uttarakhand", "West Bengal", "Delhi"
+];
+
+export default function CollegeDirectory() {
+  const [user, setUser] = useState(null);
+  const [userProfile, setUserProfile] = useState(null);
+  const [colleges, setColleges] = useState([]);
+  const [filteredColleges, setFilteredColleges] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filters, setFilters] = useState({
+    state: "all",
+    type: "all",
+    courses: "all",
+    facilities: [],
+    feeRange: "all"
+  });
+
+  const location = useLocation();
+  const { toast } = useToast();
+
+  const handleVoiceSearch = useCallback((command) => {
+    const searchRegex = /(?:search for|find) colleges in ([\w\s]+)/;
+    const searchMatch = command.match(searchRegex);
+    
+    if (searchMatch) {
+      const locationQuery = searchMatch[1].trim();
+      const foundState = INDIAN_STATES.find(s => locationQuery.toLowerCase().includes(s.toLowerCase()));
+
+      if(foundState) {
+        setFilters(prev => ({...prev, state: foundState}));
+        toast({ title: "Voice Search", description: `Filtering colleges in ${foundState}.` });
+      } else {
+        setSearchTerm(locationQuery);
+        toast({ title: "Voice Search", description: `Searching for colleges in "${locationQuery}".` });
+      }
+    }
+  }, [toast, setFilters, setSearchTerm]);
+
+  useEffect(() => {
+    const voiceCommand = location.state?.voiceCommand;
+    if (voiceCommand) {
+      handleVoiceSearch(voiceCommand);
+    }
+  }, [location.state, handleVoiceSearch]);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  useEffect(() => {
+    const filterColleges = () => {
+      let filtered = [...colleges];
+      
+      // Search filter
+      if (searchTerm) {
+        filtered = filtered.filter(college => 
+          college.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          college.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          college.state.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      }
+      
+      // State filter
+      if (filters.state !== "all") {
+        filtered = filtered.filter(college => college.state === filters.state);
+      }
+      
+      // Type filter
+      if (filters.type !== "all") {
+        filtered = filtered.filter(college => college.type === filters.type);
+      }
+      
+      // Course filter
+      if (filters.courses !== "all") {
+        filtered = filtered.filter(college => 
+          college.courses_offered.some(course => 
+            course.toLowerCase().includes(filters.courses.toLowerCase())
+          )
+        );
+      }
+      
+      // Facilities filter
+      if (filters.facilities.length > 0) {
+        filtered = filtered.filter(college => 
+          filters.facilities.every(facility => 
+            college.facilities && college.facilities[facility]
+          )
+        );
+      }
+      
+      // Fee range filter
+      if (filters.feeRange !== "all") {
+        const [min, max] = filters.feeRange.split("-").map(Number);
+        filtered = filtered.filter(college => {
+          if (!college.fees_range) return false;
+          return college.fees_range.min >= min && college.fees_range.max <= max;
+        });
+      }
+      
+      // Prioritize colleges from user's state and nearby states
+      if (userProfile?.state) {
+        filtered.sort((a, b) => {
+          const aInUserState = a.state === userProfile.state;
+          const bInUserState = b.state === userProfile.state;
+          if (aInUserState && !bInUserState) return -1;
+          if (!aInUserState && bInUserState) return 1;
+          return 0;
+        });
+      }
+      
+      setFilteredColleges(filtered);
+    };
+
+    filterColleges();
+  }, [colleges, searchTerm, filters, userProfile]);
+
+  const loadData = async () => {
+    try {
+      const currentUser = await User.me();
+      setUser(currentUser);
+      
+      const profiles = await UserProfile.filter({created_by: currentUser.email});
+      if (profiles.length > 0) {
+        setUserProfile(profiles[0]);
+      }
+      
+      const allColleges = await College.list();
+      setColleges(allColleges);
+      
+    } catch (error) {
+      await User.loginWithRedirect(window.location.href);
+    }
+    setLoading(false);
+  };
+
+  if (loading) {
+    return (
+      <div className="p-8 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6 md:p-8 space-y-6">
+      {/* Header */}
+      <div className="text-center space-y-4">
+        <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center mx-auto">
+          <School className="w-8 h-8 text-white" />
+        </div>
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+          Government Colleges Directory
+        </h1>
+        <p className="text-gray-600 max-w-2xl mx-auto">
+          Find affordable, quality government colleges across India. 
+          {userProfile?.state && ` Showing colleges prioritized for ${userProfile.state}.`}
+        </p>
+      </div>
+
+      {/* Search and Filters */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Search className="h-5 w-5" />
+            Search & Filter Colleges
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Search Bar */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              placeholder="Search by college name, city, or state..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          
+          {/* Filters */}
+          <CollegeFilters filters={filters} onFilterChange={setFilters} />
+        </CardContent>
+      </Card>
+
+      {/* College Results */}
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-bold text-gray-900">
+            Found {filteredColleges.length} College{filteredColleges.length !== 1 ? 's' : ''}
+          </h2>
+          {userProfile?.state && (
+            <div className="flex items-center gap-2 text-sm text-blue-600">
+              <MapPin className="h-4 w-4" />
+              Prioritizing {userProfile.state} colleges
+            </div>
+          )}
+        </div>
+
+        {filteredColleges.length === 0 ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <School className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Colleges Found</h3>
+              <p className="text-gray-600 mb-4">Try adjusting your search or filter criteria</p>
+              <Button 
+                onClick={() => {
+                  setSearchTerm("");
+                  setFilters({ state: "all", type: "all", courses: "all", facilities: [], feeRange: "all" });
+                }}
+                variant="outline"
+              >
+                Clear Filters
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {filteredColleges.map((college) => (
+              <CollegeCard 
+                key={college.id} 
+                college={college}
+                isInUserState={college.state === userProfile?.state}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Help Section */}
+      <Card className="border-green-200 bg-gradient-to-r from-green-50 to-emerald-50">
+        <CardContent className="py-6 text-center">
+          <h3 className="text-lg font-semibold text-green-800 mb-2">Need Guidance?</h3>
+          <p className="text-green-700 mb-4">
+            Not sure which college is right for you? Get personalized recommendations.
+          </p>
+          <div className="flex gap-3 justify-center flex-wrap">
+            <Link to={createPageUrl("CourseExploration")}>
+              <Button variant="outline" className="border-green-400 text-green-700 hover:bg-green-100">
+                Explore Courses First
+              </Button>
+            </Link>
+            <Link to={createPageUrl("Guidance")}>
+              <Button className="bg-green-600 hover:bg-green-700">
+                Get Skills Guidance
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
