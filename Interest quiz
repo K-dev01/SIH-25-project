@@ -1,0 +1,507 @@
+
+import React, { useState, useEffect, useCallback } from "react";
+import { User } from "@/entities/User";
+import { UserProfile } from "@/entities/UserProfile";
+import { QuizResult } from "@/entities/QuizResult";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
+import { useNavigate } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import { AlertCircle, Target, CheckCircle, ArrowRight, ArrowLeft, Brain } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+const QUIZ_QUESTIONS = [
+  {
+    id: 1,
+    question: "What type of activities do you enjoy most in your free time?",
+    options: [
+      { value: "reading_research", label: "Reading books, researching topics online", categories: { science: 2, arts: 1 } },
+      { value: "creative_arts", label: "Drawing, painting, writing, music", categories: { arts: 3, commerce: 1 } },
+      { value: "problem_solving", label: "Solving puzzles, math problems, coding", categories: { science: 3, technology: 3 } },
+      { value: "social_activities", label: "Organizing events, helping others", categories: { social_service: 3, commerce: 2 } }
+    ]
+  },
+  {
+    id: 2,
+    question: "Which subjects do you find most interesting in school?",
+    options: [
+      { value: "stem", label: "Mathematics, Physics, Chemistry", categories: { science: 3, technology: 2 } },
+      { value: "humanities", label: "History, Geography, Literature", categories: { arts: 3, social_service: 2 } },
+      { value: "commerce", label: "Economics, Business Studies, Accounts", categories: { commerce: 3, social_service: 1 } },
+      { value: "languages", label: "English, Hindi, Regional languages", categories: { arts: 3, social_service: 1 } }
+    ]
+  },
+  {
+    id: 3,
+    question: "What motivates you the most?",
+    options: [
+      { value: "helping_society", label: "Making a difference in society", categories: { social_service: 3, arts: 1 } },
+      { value: "financial_success", label: "Earning good money and financial security", categories: { commerce: 3, technology: 2 } },
+      { value: "innovation", label: "Creating new things and innovations", categories: { science: 3, technology: 3 } },
+      { value: "knowledge", label: "Learning and gaining knowledge", categories: { science: 2, arts: 2, social_service: 1 } }
+    ]
+  },
+  {
+    id: 4,
+    question: "Which career role appeals to you most?",
+    options: [
+      { value: "doctor_scientist", label: "Doctor, Scientist, Researcher", categories: { science: 3, social_service: 2 } },
+      { value: "teacher_writer", label: "Teacher, Writer, Journalist", categories: { arts: 3, social_service: 3 } },
+      { value: "engineer_tech", label: "Engineer, Software Developer", categories: { science: 2, technology: 3 } },
+      { value: "business_finance", label: "Business Owner, Banker, CA", categories: { commerce: 3, technology: 1 } }
+    ]
+  },
+  {
+    id: 5,
+    question: "How do you prefer to learn new things?",
+    options: [
+      { value: "hands_on", label: "By doing experiments and practical work", categories: { science: 3, technology: 2 } },
+      { value: "reading_writing", label: "By reading and writing about topics", categories: { arts: 3, commerce: 1 } },
+      { value: "group_discussion", label: "Through discussions and group activities", categories: { social_service: 3, commerce: 2 } },
+      { value: "visual_media", label: "Using videos, images, and interactive content", categories: { arts: 2, technology: 2 } }
+    ]
+  },
+  {
+    id: 6,
+    question: "What type of work environment do you prefer?",
+    options: [
+      { value: "laboratory", label: "Laboratory or research facility", categories: { science: 3, technology: 1 } },
+      { value: "office", label: "Corporate office or business setting", categories: { commerce: 3, technology: 2 } },
+      { value: "community", label: "Schools, hospitals, community centers", categories: { social_service: 3, arts: 1 } },
+      { value: "creative_space", label: "Studios, media houses, creative spaces", categories: { arts: 3, technology: 1 } }
+    ]
+  },
+  {
+    id: 7,
+    question: "Which activity would you choose for a school project?",
+    options: [
+      { value: "science_experiment", label: "Conducting a science experiment", categories: { science: 3, technology: 2 } },
+      { value: "historical_research", label: "Researching historical events", categories: { arts: 3, social_service: 2 } },
+      { value: "business_plan", label: "Creating a business plan", categories: { commerce: 3, technology: 1 } },
+      { value: "app_website", label: "Building an app or website", categories: { technology: 3, science: 1 } }
+    ]
+  },
+  {
+    id: 8,
+    question: "What kind of problems do you enjoy solving?",
+    options: [
+      { value: "mathematical", label: "Mathematical calculations and formulas", categories: { science: 3, technology: 2, commerce: 1 } },
+      { value: "social_issues", label: "Social issues and human problems", categories: { social_service: 3, arts: 2 } },
+      { value: "technical", label: "Technical and engineering challenges", categories: { technology: 3, science: 2 } },
+      { value: "creative", label: "Creative and artistic challenges", categories: { arts: 3, social_service: 1 } }
+    ]
+  },
+  {
+    id: 9,
+    question: "Which skill would you most like to develop?",
+    options: [
+      { value: "analytical", label: "Analytical and critical thinking", categories: { science: 3, commerce: 2 } },
+      { value: "communication", label: "Communication and presentation", categories: { arts: 3, social_service: 2 } },
+      { value: "technical", label: "Programming and technical skills", categories: { technology: 3, science: 1 } },
+      { value: "leadership", label: "Leadership and management", categories: { commerce: 3, social_service: 2 } }
+    ]
+  },
+  {
+    id: 10,
+    question: "What impact do you want to make in the world?",
+    options: [
+      { value: "cure_diseases", label: "Cure diseases and improve health", categories: { science: 3, social_service: 3 } },
+      { value: "educate_people", label: "Educate and inspire people", categories: { arts: 3, social_service: 3 } },
+      { value: "build_technology", label: "Build technology that helps everyone", categories: { technology: 3, science: 2 } },
+      { value: "economic_growth", label: "Drive economic growth and prosperity", categories: { commerce: 3, technology: 1 } }
+    ]
+  }
+];
+
+export default function InterestQuiz() {
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  const [userProfile, setUserProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [answers, setAnswers] = useState([]);
+  const [selectedAnswer, setSelectedAnswer] = useState("");
+  const [quizCompleted, setQuizCompleted] = useState(false);
+  const [results, setResults] = useState(null);
+  const [error, setError] = useState("");
+  const [attemptNumber, setAttemptNumber] = useState(1);
+
+  const loadUserData = useCallback(async () => {
+    try {
+      const currentUser = await User.me();
+      setUser(currentUser);
+      
+      const profiles = await UserProfile.filter({created_by: currentUser.email});
+      if (profiles.length === 0) {
+        navigate(createPageUrl("ProfileSetup"));
+        return;
+      }
+      
+      const profile = profiles[0];
+      setUserProfile(profile);
+      
+      // Check previous quiz attempts
+      const quizResults = await QuizResult.filter({created_by: currentUser.email}, '-created_date', 1);
+      if (quizResults.length > 0) {
+        setAttemptNumber(quizResults[0].attempt_number + 1);
+        if (profile.quiz_completed && quizResults[0].attempt_number >= 2) {
+          // Already completed with maximum attempts
+          navigate(createPageUrl("CourseExploration"));
+          return;
+        }
+      }
+    } catch (error) {
+      await User.loginWithRedirect(window.location.href);
+    }
+    setLoading(false);
+  }, [navigate]);
+
+  useEffect(() => {
+    loadUserData();
+  }, [loadUserData]);
+
+  const handleAnswerSelect = (value) => {
+    setSelectedAnswer(value);
+    setError("");
+  };
+
+  const handleNextQuestion = () => {
+    if (!selectedAnswer) {
+      setError("Please select an answer to continue");
+      return;
+    }
+
+    const question = QUIZ_QUESTIONS[currentQuestion];
+    const selectedOption = question.options.find(opt => opt.value === selectedAnswer);
+    
+    const newAnswers = [...answers, {
+      question_id: question.id,
+      answer: selectedAnswer,
+      score: selectedOption.categories
+    }];
+    setAnswers(newAnswers);
+
+    if (currentQuestion < QUIZ_QUESTIONS.length - 1) {
+      setCurrentQuestion(currentQuestion + 1);
+      setSelectedAnswer("");
+    } else {
+      calculateResults(newAnswers);
+    }
+  };
+
+  const handlePreviousQuestion = () => {
+    if (currentQuestion > 0) {
+      setCurrentQuestion(currentQuestion - 1);
+      const prevAnswers = answers.slice(0, currentQuestion);
+      setAnswers(prevAnswers);
+      setSelectedAnswer(prevAnswers[currentQuestion - 1]?.answer || "");
+    }
+  };
+
+  const calculateResults = async (finalAnswers) => {
+    const categoryScores = {
+      science: 0,
+      arts: 0,
+      commerce: 0,
+      technology: 0,
+      social_service: 0
+    };
+
+    finalAnswers.forEach(answer => {
+      Object.entries(answer.score).forEach(([category, score]) => {
+        categoryScores[category] += score;
+      });
+    });
+
+    const totalScore = Object.values(categoryScores).reduce((sum, score) => sum + score, 0);
+    
+    // Sort categories by score to get recommendations
+    const sortedCategories = Object.entries(categoryScores)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 2);
+
+    const recommendedStreams = sortedCategories.map(([category]) => {
+      switch(category) {
+        case 'science': return 'Science';
+        case 'arts': return 'Arts/Humanities';
+        case 'commerce': return 'Commerce';
+        case 'technology': return 'Engineering/Technology';
+        case 'social_service': return 'Social Sciences';
+        default: return category;
+      }
+    });
+
+    const personalityType = getPersonalityType(categoryScores);
+
+    const resultData = {
+      quiz_type: "interest_assessment",
+      answers: finalAnswers,
+      total_score: totalScore,
+      category_scores: categoryScores,
+      recommended_streams: recommendedStreams,
+      personality_type: personalityType,
+      attempt_number: attemptNumber
+    };
+
+    try {
+      await QuizResult.create(resultData);
+      
+      // Update user profile
+      await UserProfile.update(userProfile.id, {
+        quiz_completed: true,
+        quiz_score: categoryScores,
+        total_badges: userProfile.total_badges + 1
+      });
+
+      setResults(resultData);
+      setQuizCompleted(true);
+    } catch (error) {
+      setError("Failed to save quiz results. Please try again.");
+    }
+  };
+
+  const getPersonalityType = (scores) => {
+    const maxCategory = Object.entries(scores).reduce((max, [category, score]) => 
+      score > max[1] ? [category, score] : max
+    );
+
+    const personalityTypes = {
+      science: "The Investigator - You love exploring how things work and solving scientific problems",
+      arts: "The Creator - You have a strong appreciation for creativity, culture, and human expression",
+      commerce: "The Entrepreneur - You're interested in business, finance, and economic systems",
+      technology: "The Innovator - You enjoy building things and working with cutting-edge technology",
+      social_service: "The Helper - You're motivated by making a positive impact on society and helping others"
+    };
+
+    return personalityTypes[maxCategory[0]] || "The Explorer - You have diverse interests across multiple fields";
+  };
+
+  if (loading) {
+    return (
+      <div className="p-8 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (quizCompleted && results) {
+    return (
+      <div className="p-6 md:p-8 max-w-4xl mx-auto space-y-6">
+        {/* Results Header */}
+        <div className="text-center space-y-4">
+          <div className="w-20 h-20 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto">
+            <CheckCircle className="w-10 h-10 text-white" />
+          </div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+            Quiz Completed Successfully!
+          </h1>
+          <p className="text-gray-600">Here are your personalized recommendations based on your interests and aptitude.</p>
+        </div>
+
+        {/* Personality Type */}
+        <Card className="border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-purple-800">
+              <Brain className="h-6 w-6" />
+              Your Personality Type
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-lg font-semibold text-purple-900">{results.personality_type}</p>
+          </CardContent>
+        </Card>
+
+        {/* Recommended Streams */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-blue-800">Recommended Academic Streams</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {results.recommended_streams.map((stream, index) => (
+                <div key={stream} className={`p-4 rounded-lg border-2 ${index === 0 ? 'border-blue-400 bg-blue-50' : 'border-gray-200 bg-gray-50'}`}>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${index === 0 ? 'bg-blue-600' : 'bg-gray-400'}`}>
+                      <span className="text-white font-bold text-sm">{index + 1}</span>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">{stream}</h3>
+                      <p className="text-sm text-gray-600">{index === 0 ? 'Best match for you' : 'Good alternative option'}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Detailed Scores */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-gray-800">Your Interest Profile</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {Object.entries(results.category_scores).map(([category, score]) => {
+              const maxScore = Math.max(...Object.values(results.category_scores));
+              const percentage = (score / maxScore) * 100;
+              
+              const categoryNames = {
+                science: "Science & Research",
+                arts: "Arts & Humanities", 
+                commerce: "Commerce & Business",
+                technology: "Technology & Engineering",
+                social_service: "Social Service & Education"
+              };
+
+              return (
+                <div key={category} className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="font-medium">{categoryNames[category]}</span>
+                    <span className="text-sm font-semibold">{score} points</span>
+                  </div>
+                  <Progress value={percentage} className="h-2" />
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+
+        {/* Next Steps */}
+        <div className="flex justify-center pt-6">
+          <Button
+            onClick={() => navigate(createPageUrl("CourseExploration"))}
+            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold px-8 py-3 text-lg"
+          >
+            Explore Your Recommended Courses
+            <ArrowRight className="w-5 h-5 ml-2" />
+          </Button>
+        </div>
+
+        {/* Retake Option */}
+        {attemptNumber < 2 && (
+          <Card className="border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50">
+            <CardContent className="py-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-amber-800">Want to retake the quiz?</h3>
+                  <p className="text-sm text-amber-700">You have {2 - attemptNumber} attempt{2 - attemptNumber > 1 ? 's' : ''} remaining</p>
+                </div>
+                <Button 
+                  variant="outline"
+                  onClick={() => window.location.reload()}
+                  className="border-amber-400 text-amber-700 hover:bg-amber-100"
+                >
+                  Retake Quiz
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6 md:p-8 max-w-3xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="text-center space-y-4">
+        <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center mx-auto">
+          <Target className="w-8 h-8 text-white" />
+        </div>
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          Interest & Aptitude Assessment
+        </h1>
+        <p className="text-gray-600">
+          Answer these questions honestly to discover the academic streams and career paths that align with your interests.
+        </p>
+      </div>
+
+      {/* Progress Bar */}
+      <div className="space-y-2">
+        <div className="flex justify-between text-sm font-medium">
+          <span>Question {currentQuestion + 1} of {QUIZ_QUESTIONS.length}</span>
+          <span>{Math.round(((currentQuestion + 1) / QUIZ_QUESTIONS.length) * 100)}% Complete</span>
+        </div>
+        <Progress value={((currentQuestion + 1) / QUIZ_QUESTIONS.length) * 100} className="h-3" />
+      </div>
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Quiz Attempt Info */}
+      {attemptNumber > 1 && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            This is attempt #{attemptNumber}. You can retake the quiz up to 2 times for better recommendations.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Question Card */}
+      <Card className="border-blue-200">
+        <CardHeader>
+          <CardTitle className="text-xl text-gray-900">
+            {QUIZ_QUESTIONS[currentQuestion].question}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <RadioGroup value={selectedAnswer} onValueChange={handleAnswerSelect}>
+            {QUIZ_QUESTIONS[currentQuestion].options.map((option) => (
+              <div key={option.value} className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-blue-50 transition-colors">
+                <RadioGroupItem value={option.value} id={option.value} />
+                <Label htmlFor={option.value} className="cursor-pointer flex-1 text-gray-700 leading-relaxed">
+                  {option.label}
+                </Label>
+              </div>
+            ))}
+          </RadioGroup>
+        </CardContent>
+      </Card>
+
+      {/* Navigation Buttons */}
+      <div className="flex justify-between pt-6">
+        <Button
+          variant="outline"
+          onClick={handlePreviousQuestion}
+          disabled={currentQuestion === 0}
+          className="flex items-center gap-2"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Previous
+        </Button>
+
+        <Button
+          onClick={handleNextQuestion}
+          disabled={!selectedAnswer}
+          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 flex items-center gap-2"
+        >
+          {currentQuestion === QUIZ_QUESTIONS.length - 1 ? "Complete Quiz" : "Next Question"}
+          <ArrowRight className="w-4 h-4" />
+        </Button>
+      </div>
+
+      {/* Quiz Info */}
+      <Card className="border-green-200 bg-gradient-to-r from-green-50 to-emerald-50">
+        <CardContent className="py-4">
+          <div className="flex items-start gap-3">
+            <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
+            <div>
+              <h3 className="font-semibold text-green-800">How This Quiz Helps</h3>
+              <p className="text-sm text-green-700 mt-1">
+                This assessment analyzes your preferences across science, arts, commerce, technology, and social service to recommend the best academic streams and career paths for your unique profile.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
