@@ -1,0 +1,135 @@
+{
+  "name": "College",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "College name"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "government",
+        "aided",
+        "deemed"
+      ],
+      "description": "College type"
+    },
+    "state": {
+      "type": "string",
+      "description": "State location"
+    },
+    "district": {
+      "type": "string",
+      "description": "District location"
+    },
+    "city": {
+      "type": "string",
+      "description": "City location"
+    },
+    "courses_offered": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of courses/degrees offered"
+    },
+    "streams": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "science",
+          "arts",
+          "commerce",
+          "engineering",
+          "medical",
+          "vocational"
+        ]
+      },
+      "description": "Academic streams available"
+    },
+    "facilities": {
+      "type": "object",
+      "properties": {
+        "hostel": {
+          "type": "boolean"
+        },
+        "library": {
+          "type": "boolean"
+        },
+        "labs": {
+          "type": "boolean"
+        },
+        "internet": {
+          "type": "boolean"
+        },
+        "canteen": {
+          "type": "boolean"
+        },
+        "sports": {
+          "type": "boolean"
+        }
+      }
+    },
+    "fees_range": {
+      "type": "object",
+      "properties": {
+        "min": {
+          "type": "number"
+        },
+        "max": {
+          "type": "number"
+        },
+        "currency": {
+          "type": "string",
+          "default": "INR"
+        }
+      }
+    },
+    "admission_process": {
+      "type": "string",
+      "description": "Admission requirements and process"
+    },
+    "cutoff_marks": {
+      "type": "object",
+      "description": "Previous year cutoff marks by category"
+    },
+    "contact_info": {
+      "type": "object",
+      "properties": {
+        "website": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        }
+      }
+    },
+    "virtual_tour_url": {
+      "type": "string",
+      "description": "YouTube or virtual tour link"
+    },
+    "accreditation": {
+      "type": "string",
+      "description": "Accreditation details (NAAC rating, etc.)"
+    },
+    "medium_of_instruction": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Languages of instruction"
+    }
+  },
+  "required": [
+    "name",
+    "type",
+    "state",
+    "city",
+    "courses_offered"
+  ]
+}
