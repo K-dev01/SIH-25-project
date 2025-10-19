@@ -1,0 +1,74 @@
+import { useState, useEffect, useRef } from 'react';
+const useVoiceRecognition = () => {
+  const [isListening, setIsListening] = useState(false);
+  const [transcript, setTranscript] = useState('');
+  const [error, setError] = useState('');
+  const recognitionRef = useRef(null);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setError('Speech recognition not supported in this browser.');
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.lang = 'en-IN';
+    recognition.interimResults = false;
+    recognition.onresult = (event) => {
+      const currentTranscript = event.results[0][0].transcript;
+      setTranscript(currentTranscript.toLowerCase());
+      setIsListening(false);
+    };
+    recognition.onerror = (event) => {
+      setError(`Speech recognition error: ${event.error}`);
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      if (recognitionRef.current) {
+         setIsListening(false);
+      }
+    };
+    
+    recognitionRef.current = recognition;
+
+    return () => {
+      recognitionRef.current = null;
+      recognition.stop();
+    };
+  }, []);
+
+  const startListening = () => {
+    if (recognitionRef.current && !isListening) {
+      try {
+        setTranscript('');
+        setError('');
+        recognitionRef.current.start();
+        setIsListening(true);
+      } catch (e) {
+        setError(`Could not start recognition: ${e.message}`);
+        setIsListening(false);
+      }
+    }
+  };
+
+  const stopListening = () => {
+    if (recognitionRef.current && isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    }
+  };
+
+  return {
+    isListening,
+    transcript,
+    error,
+    startListening,
+    stopListening,
+    hasRecognitionSupport: !!recognitionRef.current,
+  };
+};
+
+export default useVoiceRecognition;
