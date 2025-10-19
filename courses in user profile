@@ -1,0 +1,144 @@
+{
+  "name": "Course",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Course/degree name"
+    },
+    "stream": {
+      "type": "string",
+      "enum": [
+        "science",
+        "arts",
+        "commerce",
+        "engineering",
+        "medical",
+        "vocational"
+      ],
+      "description": "Academic stream"
+    },
+    "level": {
+      "type": "string",
+      "enum": [
+        "undergraduate",
+        "postgraduate",
+        "diploma",
+        "certificate"
+      ],
+      "description": "Degree level"
+    },
+    "duration": {
+      "type": "string",
+      "description": "Course duration (e.g., '3 years', '4 years')"
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed course description"
+    },
+    "eligibility": {
+      "type": "string",
+      "description": "Eligibility criteria"
+    },
+    "entrance_exams": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "conducting_body": {
+            "type": "string"
+          },
+          "website": {
+            "type": "string"
+          },
+          "exam_dates": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Relevant competitive exams"
+    },
+    "career_opportunities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Career paths and job opportunities"
+    },
+    "average_salary": {
+      "type": "object",
+      "properties": {
+        "min": {
+          "type": "number"
+        },
+        "max": {
+          "type": "number"
+        },
+        "currency": {
+          "type": "string",
+          "default": "INR"
+        }
+      }
+    },
+    "required_skills": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Key skills needed for success"
+    },
+    "learning_resources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "video",
+              "article",
+              "course",
+              "book"
+            ]
+          }
+        }
+      }
+    },
+    "scholarships": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "eligibility": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "application_link": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "name",
+    "stream",
+    "level",
+    "description",
+    "eligibility"
+  ]
+}
