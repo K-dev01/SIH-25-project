@@ -1,0 +1,141 @@
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+import { 
+  Lightbulb, 
+  Code, 
+  Paintbrush, 
+  BarChart, 
+  Heart, 
+  Book,
+  ExternalLink,
+  Users,
+  Trophy
+} from 'lucide-react';
+
+const skillResources = [
+  {
+    category: "Technology / Engineering",
+    icon: Code,
+    skills: ["Coding (Python, Java)", "Problem Solving", "Data Structures"],
+    resources: [
+      { name: "Khan Academy", url: "https://www.khanacademy.org/computing" },
+      { name: "freeCodeCamp", url: "https://www.freecodecamp.org/" }
+    ]
+  },
+  {
+    category: "Arts / Humanities",
+    icon: Paintbrush,
+    skills: ["Creative Writing", "Critical Thinking", "Communication"],
+    resources: [
+      { name: "Project Gutenberg", url: "https://www.gutenberg.org/" },
+      { name: "NCERT Textbooks", url: "https://ncert.nic.in/textbook.php" }
+    ]
+  },
+  {
+    category: "Commerce",
+    icon: BarChart,
+    skills: ["Financial Literacy", "Analytical Skills", "MS Excel"],
+    resources: [
+      { name: "Investopedia", url: "https://www.investopedia.com/" },
+      { name: "RBI Financial Education", url: "https://rbi.org.in/financialeducation/" }
+    ]
+  },
+  {
+    category: "Medical / Science",
+    icon: Heart,
+    skills: ["Biology Fundamentals", "Scientific Method", "Research"],
+    resources: [
+      { name: "Khan Academy Biology", url: "https://www.khanacademy.org/science/biology" },
+      { name: "NPTEL Courses", url: "https://nptel.ac.in/" }
+    ]
+  }
+];
+
+const extracurriculars = [
+  { name: "Join a Sports Team", description: "Improves teamwork, discipline, and physical health.", icon: Trophy },
+  { name: "Participate in Debates", description: "Boosts public speaking, confidence, and critical thinking.", icon: Users },
+  { name: "Start a Reading Club", description: "Enhances vocabulary, comprehension, and social skills.", icon: Book },
+  { name: "Volunteer for a Cause", description: "Develops empathy, social responsibility, and leadership.", icon: Heart }
+];
+
+export default function GuidancePage() {
+  return (
+    <div className="p-6 md:p-8 space-y-8">
+      {/* Header */}
+      <div className="text-center space-y-4">
+        <div className="w-16 h-16 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full flex items-center justify-center mx-auto">
+          <Lightbulb className="w-8 h-8 text-white" />
+        </div>
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+          Skills & Extra-Curriculars
+        </h1>
+        <p className="text-gray-600 max-w-2xl mx-auto">
+          Develop essential skills for your chosen career path and discover enriching activities beyond academics.
+        </p>
+      </div>
+
+      {/* Skill Recommendations */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl font-bold text-gray-900">Skill Recommendations by Stream</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {skillResources.map((item) => (
+            <div key={item.category} className="p-4 border rounded-lg">
+              <div className="flex items-center gap-3 mb-4">
+                <item.icon className="h-6 w-6 text-purple-600" />
+                <h3 className="text-lg font-semibold text-gray-800">{item.category}</h3>
+              </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-medium mb-2 text-gray-700">Key Skills to Develop:</h4>
+                  <ul className="space-y-1 list-disc list-inside">
+                    {item.skills.map(skill => <li key={skill} className="text-sm text-gray-600">{skill}</li>)}
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-medium mb-2 text-gray-700">Free Learning Resources:</h4>
+                  <div className="space-y-2">
+                    {item.resources.map(resource => (
+                      <a href={resource.url} target="_blank" rel="noopener noreferrer" key={resource.name}>
+                        <Button variant="outline" className="w-full justify-between">
+                          {resource.name}
+                          <ExternalLink className="w-4 h-4" />
+                        </Button>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      {/* Extra-Curricular Guidance */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl font-bold text-gray-900">Extra-Curricular Guidance</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-gray-600 mb-6">
+            Engaging in extra-curricular activities is crucial for holistic development. They help build character, teach valuable life skills, and make your profile stronger for college admissions.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {extracurriculars.map((activity) => (
+              <div key={activity.name} className="flex items-start gap-4 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                <activity.icon className="h-8 w-8 text-purple-600 mt-1" />
+                <div>
+                  <h4 className="font-semibold text-purple-900">{activity.name}</h4>
+                  <p className="text-sm text-purple-700">{activity.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
