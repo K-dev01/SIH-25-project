@@ -1,0 +1,70 @@
+import React from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Filter, RotateCcw } from "lucide-react";
+
+export default function CourseFilters({ filters, onFilterChange }) {
+  const handleFilterChange = (key, value) => {
+    onFilterChange(prev => ({ ...prev, [key]: value }));
+  };
+
+  const resetFilters = () => {
+    onFilterChange({ stream: "all", level: "all", duration: "all" });
+  };
+
+  return (
+    <div className="flex flex-wrap gap-4 items-center">
+      <div className="flex items-center gap-2">
+        <Filter className="h-4 w-4 text-gray-500" />
+        <span className="text-sm font-medium text-gray-700">Filters:</span>
+      </div>
+
+      <Select value={filters.stream} onValueChange={(value) => handleFilterChange("stream", value)}>
+        <SelectTrigger className="w-40">
+          <SelectValue placeholder="All Streams" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Streams</SelectItem>
+          <SelectItem value="science">Science</SelectItem>
+          <SelectItem value="engineering">Engineering</SelectItem>
+          <SelectItem value="medical">Medical</SelectItem>
+          <SelectItem value="arts">Arts & Humanities</SelectItem>
+          <SelectItem value="commerce">Commerce</SelectItem>
+          <SelectItem value="vocational">Vocational</SelectItem>
+        </SelectContent>
+      </Select>
+
+      <Select value={filters.level} onValueChange={(value) => handleFilterChange("level", value)}>
+        <SelectTrigger className="w-40">
+          <SelectValue placeholder="All Levels" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Levels</SelectItem>
+          <SelectItem value="undergraduate">Undergraduate</SelectItem>
+          <SelectItem value="postgraduate">Postgraduate</SelectItem>
+          <SelectItem value="diploma">Diploma</SelectItem>
+          <SelectItem value="certificate">Certificate</SelectItem>
+        </SelectContent>
+      </Select>
+
+      <Select value={filters.duration} onValueChange={(value) => handleFilterChange("duration", value)}>
+        <SelectTrigger className="w-32">
+          <SelectValue placeholder="Duration" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Any Duration</SelectItem>
+          <SelectItem value="1">1 Year</SelectItem>
+          <SelectItem value="2">2 Years</SelectItem>
+          <SelectItem value="3">3 Years</SelectItem>
+          <SelectItem value="4">4 Years</SelectItem>
+          <SelectItem value="5">5+ Years</SelectItem>
+        </SelectContent>
+      </Select>
+
+      <Button variant="outline" size="sm" onClick={resetFilters} className="ml-2">
+        <RotateCcw className="h-4 w-4 mr-2" />
+        Reset
+      </Button>
+    </div>
+  );
+}
