@@ -1,0 +1,92 @@
+{
+  "name": "UserProfile",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Student's full name"
+    },
+    "age": {
+      "type": "number",
+      "description": "Student's age"
+    },
+    "gender": {
+      "type": "string",
+      "enum": [
+        "male",
+        "female",
+        "other",
+        "prefer_not_to_say"
+      ],
+      "description": "Student's gender"
+    },
+    "class_level": {
+      "type": "string",
+      "enum": [
+        "10th",
+        "11th",
+        "12th",
+        "graduate"
+      ],
+      "description": "Current education level"
+    },
+    "state": {
+      "type": "string",
+      "description": "State of residence"
+    },
+    "district": {
+      "type": "string",
+      "description": "District of residence"
+    },
+    "career_goals": {
+      "type": "string",
+      "description": "Ambition and career aspirations"
+    },
+    "preferred_language": {
+      "type": "string",
+      "enum": [
+        "english",
+        "hindi",
+        "tamil",
+        "telugu",
+        "kannada",
+        "marathi",
+        "gujarati",
+        "bengali"
+      ],
+      "default": "english",
+      "description": "Preferred interface language"
+    },
+    "quiz_completed": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether interest quiz is completed"
+    },
+    "quiz_score": {
+      "type": "object",
+      "description": "Quiz results and recommendations"
+    },
+    "onboarding_completed": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether onboarding process is complete"
+    },
+    "learning_streak": {
+      "type": "number",
+      "default": 0,
+      "description": "Current learning streak in days"
+    },
+    "total_badges": {
+      "type": "number",
+      "default": 0,
+      "description": "Total badges earned"
+    }
+  },
+  "required": [
+    "name",
+    "age",
+    "gender",
+    "class_level",
+    "career_goals"
+  ]
+}
