@@ -1,0 +1,289 @@
+import React, { useState, useEffect, useCallback } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import { User } from "@/entities/User";
+import { UserProfile } from "@/entities/UserProfile";
+import useVoiceRecognition from "../components/useVoiceRecognition"; // Corrected path
+import VoiceAssistant from "../components/VoiceAssistant";
+import {
+  Home,
+  User as UserIcon,
+  BookOpen,
+  School,
+  Target,
+  TrendingUp,
+  Menu,
+  X,
+  LogOut,
+  Sparkles
+} from "lucide-react";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarHeader,
+  SidebarFooter,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/use-toast";
+const navigationItems = [
+  {
+    title: "Dashboard",
+    url: createPageUrl("Dashboard"),
+    icon: Home,
+    command: "dashboard",
+  },
+  {
+    title: "Profile Setup",
+    url: createPageUrl("ProfileSetup"),
+    icon: UserIcon,
+    command: "profile",
+  },
+  {
+    title: "Interest Quiz",
+    url: createPageUrl("InterestQuiz"),
+    icon: Target,
+    command: "quiz",
+  },
+  {
+    title: "Explore Courses",
+    url: createPageUrl("CourseExploration"),
+    icon: BookOpen,
+    command: "courses",
+  },
+  {
+    title: "Find Colleges",
+    url: createPageUrl("CollegeDirectory"),
+    icon: School,
+    command: "colleges",
+  },
+  {
+    title: "My Progress",
+    url: createPageUrl("Progress"),
+    icon: TrendingUp,
+    command: "progress",
+  },
+  {
+    title: "Skills & Guidance",
+    url: createPageUrl("Guidance"),
+    icon: Sparkles,
+    command: "guidance",
+  }
+];
+
+export default function Layout({ children, currentPageName }) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [user, setUser] = useState(null);
+  const [userProfile, setUserProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const {
+    isListening,
+    transcript,
+    startListening,
+    hasRecognitionSupport
+  } = useVoiceRecognition();
+
+  const handleVoiceCommand = useCallback((command) => {
+    toast({
+      title: "Voice Command Received",
+      description: `"${command}"`,
+    });
+
+    const page = navigationItems.find(item => command.includes(item.command));
+    if (page) {
+      navigate(page.url);
+      return;
+    }
+
+    // Pass command to page via state for more specific actions
+    const pageName = location.pathname.split('/').pop() || 'Dashboard';
+
+    // Check if the page is CourseExploration or CollegeDirectory to pass state
+    if (pageName === 'CourseExploration' || pageName === 'CollegeDirectory') {
+      navigate(location.pathname, { state: { voiceCommand: command } });
+    } else {
+       toast({
+        variant: "destructive",
+        title: "Command not understood",
+        description: "Please try a navigation command like 'go to dashboard'.",
+      });
+    }
+  }, [navigate, toast, location]); // Added dependencies for useCallback
+
+  useEffect(() => {
+    if (transcript) {
+      handleVoiceCommand(transcript);
+    }
+  }, [transcript, handleVoiceCommand]); // Added handleVoiceCommand to dependencies
+
+  useEffect(() => {
+    loadUser();
+  }, []);
+
+  const loadUser = async () => {
+    try {
+      const currentUser = await User.me();
+      setUser(currentUser);
+
+      const profiles = await UserProfile.filter({created_by: currentUser.email});
+      if (profiles.length > 0) {
+        setUserProfile(profiles[0]);
+      }
+    } catch (error) {
+      console.log("User not authenticated");
+    }
+    setLoading(false);
+  };
+
+  const handleLogout = async () => {
+    await User.logout();
+    window.location.reload();
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+        {children}
+      </div>
+    );
+  }
+
+  return (
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+        <Sidebar className="border-r border-blue-200 bg-white/80 backdrop-blur-sm">
+          <SidebarHeader className="border-b border-blue-200 p-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center">
+                <BookOpen className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h2 className="font-bold text-gray-900 text-lg">EduGuide India</h2>
+                <p className="text-xs text-blue-600">Your Education Companion</p>
+              </div>
+            </div>
+          </SidebarHeader>
+
+          <SidebarContent className="p-4">
+            <SidebarGroup>
+              <SidebarGroupLabel className="text-xs font-semibold text-blue-700 uppercase tracking-wider px-2 py-2">
+                Navigation
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {navigationItems.map((item) => (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton
+                        asChild
+                        className={`hover:bg-blue-100 hover:text-blue-800 transition-all duration-200 rounded-xl mb-1 ${
+                          location.pathname === item.url ? 'bg-blue-100 text-blue-800 shadow-sm' : 'text-gray-700'
+                        }`}
+                      >
+                        <Link to={item.url} className="flex items-center gap-3 px-3 py-3">
+                          <item.icon className="w-5 h-5" />
+                          <span className="font-medium">{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+
+            {userProfile && (
+              <SidebarGroup>
+                <SidebarGroupLabel className="text-xs font-semibold text-green-700 uppercase tracking-wider px-2 py-2">
+                  Your Progress
+                </SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <div className="px-3 py-2 space-y-3">
+                    <div className="flex items-center gap-3 text-sm">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span className="text-gray-600">Learning Streak</span>
+                      <span className="ml-auto font-bold text-green-600">{userProfile.learning_streak} days</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm">
+                      <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+                      <span className="text-gray-600">Badges Earned</span>
+                      <span className="ml-auto font-bold text-amber-600">{userProfile.total_badges}</span>
+                    </div>
+                    {!userProfile.quiz_completed && (
+                      <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mt-3">
+                        <p className="text-xs text-orange-700 font-medium">Complete your interest quiz to unlock personalized recommendations!</p>
+                      </div>
+                    )}
+                  </div>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            )}
+          </SidebarContent>
+
+          <SidebarFooter className="border-t border-blue-200 p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                <span className="text-white font-semibold text-sm">
+                  {user.full_name?.charAt(0) || 'U'}
+                </span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-gray-900 text-sm truncate">
+                  {userProfile?.name || user.full_name || 'User'}
+                </p>
+                <p className="text-xs text-gray-500 truncate">{user.email}</p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleLogout}
+              className="w-full hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Logout
+            </Button>
+          </SidebarFooter>
+        </Sidebar>
+
+        <main className="flex-1 flex flex-col">
+          {/* Mobile header */}
+          <header className="bg-white/80 backdrop-blur-sm border-b border-blue-200 px-6 py-4 md:hidden">
+            <div className="flex items-center gap-4">
+              <SidebarTrigger className="hover:bg-blue-100 p-2 rounded-lg transition-colors duration-200" />
+              <h1 className="text-xl font-bold text-gray-900">EduGuide India</h1>
+            </div>
+          </header>
+
+          {/* Main content */}
+          <div className="flex-1 overflow-auto">
+            {children}
+          </div>
+
+          <VoiceAssistant
+            isListening={isListening}
+            startListening={startListening}
+            hasRecognitionSupport={hasRecognitionSupport}
+            transcript={transcript}
+          />
+        </main>
+      </div>
+    </SidebarProvider>
+  );
+}
