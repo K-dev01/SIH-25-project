@@ -1,0 +1,76 @@
+{
+  "name": "QuizResult",
+  "type": "object",
+  "properties": {
+    "quiz_type": {
+      "type": "string",
+      "default": "interest_assessment",
+      "description": "Type of quiz taken"
+    },
+    "answers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "question_id": {
+            "type": "number"
+          },
+          "answer": {
+            "type": "string"
+          },
+          "score": {
+            "type": "object",
+            "description": "Category scores for this answer"
+          }
+        }
+      },
+      "description": "User's quiz answers"
+    },
+    "total_score": {
+      "type": "number",
+      "description": "Overall quiz score"
+    },
+    "category_scores": {
+      "type": "object",
+      "properties": {
+        "science": {
+          "type": "number"
+        },
+        "arts": {
+          "type": "number"
+        },
+        "commerce": {
+          "type": "number"
+        },
+        "technology": {
+          "type": "number"
+        },
+        "social_service": {
+          "type": "number"
+        }
+      },
+      "description": "Scores in different interest categories"
+    },
+    "recommended_streams": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Recommended academic streams"
+    },
+    "personality_type": {
+      "type": "string",
+      "description": "Identified personality/interest type"
+    },
+    "attempt_number": {
+      "type": "number",
+      "default": 1,
+      "description": "Quiz attempt number (max 2 retries allowed)"
+    }
+  },
+  "required": [
+    "answers",
+    "total_score",
+    "category_scores"
+  ]
+}
